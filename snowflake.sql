@@ -76,3 +76,106 @@ SHOW parameters;
 SHOW parameters IN DATABASE consumer_int;
 SHOW parameters IN WAREHOUSE development;
 SHOW parameters IN TABLE "CONSUMER_INT"."DWH"."CUSTOMER";
+
+
+CREATE OR REPLACE TABLE CONSUMER_INT.DWH.CUSTOMER
+AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCH_SF1.CUSTOMER;
+
+CREATE OR REPLACE TABLE CONSUMER_INT.DWH.ORDERS
+AS SELECT * FROM SNOWFLAKE_SAMPLE_DATA.TPCH_SF1.ORDERS;
+
+
+USE CONSUMER_INT;
+
+SELECT get_ddl('TABLE', 'dwh.customer');
+SELECT get_ddl('TABLE', 'dwh.orders');
+
+// PREVIEW
+SELECT * FROM ORDERS LIMIT 10;
+
+SELECT TOP 5 o.o_custkey, COUNT(o.o_orderkey)
+FROM CUSTOMER c INNER JOIN ORDERS o ON c.c_custkey = o.o_custkey
+GROUP BY o.o_custkey ORDER BY 2 DESC;
+
+
+
+
+CREATE OR REPLACE VIEW top_customer_view(cust_name, cust_address, num_orders) AS
+(WITH top_orders(customer_key, num_orders)
+AS (
+SELECT TOP 5 o.o_custkey, COUNT(o.o_orderkey)
+FROM CUSTOMER c INNER JOIN ORDERS o ON c.c_custkey = o.o_custkey
+GROUP BY o.o_custkey ORDER BY 2 DESC
+)
+SELECT c.c_name, c.c_address, t.num_orders
+FROM CUSTOMER c JOIN TOP_ORDERS t ON c.c_custkey=t.customer_key
+);
+
+SELECT * FROM top_customer_view;
+
+
+SELECT cust_name, max(num_orders) as num_orders
+FROM top_customer_view
+GROUP BY cust_name
+ORDER BY 2 DESC;
+
+DESCRIBE VIEW top_customer_view;
+
+
+
+CREATE TABLE IF NOT EXISTS hospital (
+    patient_id integer,
+    patient_name varchar,
+    billing_address varchar,
+    diagnosis varchar,
+    treatment varchar,
+    cost number(10, 2)
+);
+
+INSERT INTO hospital
+       (patient_id, patient_name, billing_address, diagnosis, treatment, cost)
+    VALUES
+        (1, 'Mark', '1982 Songdo', 'Industrial Disease', 'A week of peace and quiet', 2000.00),
+        (2, 'Noel', 'Haesong-ro', 'Python Bite', 'anti-venom', 70000.00);
+
+
+SELECT * FROM hospital;
+
+
+CREATE VIEW IF NOT EXISTS doctor_view AS
+    SELECT patient_id, patient_name, diagnosis, treatment
+    FROM hospital;
+
+CREATE VIEW IF NOT EXISTS accountant_view AS
+    SELECT patient_id, patient_name, billing_address, cost
+    FROM hospital;
+
+SELECT * FROM doctor_view;
+SELECT * FROM accountant_view;
+
+SELECT DISTINCT diagnosis FROM doctor_view;
+
+SELECT treatment, cost
+FROM doctor_view as dv
+    INNER JOIN accountant_view AS av
+    ON av.patient_id = dv.patient_id;
+
+SELECT *
+FROM consumer_int.dwh.top_customer_view;
+
+
+SELECT *
+FROM consumer_int.information_schema.views
+WHERE TABLE_NAME = 'TOP_CUSTOMER_VIEW';
+
+SELECT 1 AS n;
+SELECT 1 AS n UNION ALL SELECT n+1 FROM NUMBERS WHERE n<5;
+
+SELECT 1 AS n;
+WITH NUMBERS AS (SELECT 1 AS n
+                 UNION ALL
+                 SELECT n+1
+                 FROM NUMBERS
+                 WHERE n<5
+                )
+SELECT * FROM NUMBERS;
