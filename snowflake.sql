@@ -100,7 +100,7 @@ GROUP BY o.o_custkey ORDER BY 2 DESC;
 
 
 
-CREATE OR REPLACE VIEW top_customer_view(cust_name, cust_address, num_orders) AS
+CREATE OR REPLACE VIEW top_customer_view (cust_name, cust_address, num_orders) AS
 (WITH top_orders(customer_key, num_orders)
 AS (
 SELECT TOP 5 o.o_custkey, COUNT(o.o_orderkey)
@@ -179,3 +179,25 @@ WITH NUMBERS AS (SELECT 1 AS n
                  WHERE n<5
                 )
 SELECT * FROM NUMBERS;
+
+
+CREATE OR REPLACE RECURSIVE VIEW r_view (n)
+AS (
+  SELECT 1 AS n
+  UNION ALL
+  SELECT n+1
+  FROM r_view
+  WHERE n < 5
+);
+
+SELECT * FROM r_view;
+
+
+CREATE OR REPLACE materialized VIEW open_orders (customer_key, num_orders)
+AS (
+    SELECT o_custkey, o_orderkey
+    FROM orders
+    WHERE o_orderstatus = 'O'
+);
+
+SELECT * FROM open_orders;
