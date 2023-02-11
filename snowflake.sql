@@ -201,3 +201,53 @@ AS (
 );
 
 SELECT * FROM open_orders;
+
+
+//TEMPORARY, TRANSIENT TABLES
+CREATE OR REPLACE TEMPORARY TABLE my_temporary_table(col1 int, col2 string)
+DATA_RETENTION_TIME_IN_DAYS = 1; // value can be 0 or 1
+
+SELECT * FROM my_temporary_table;
+
+SHOW databases;
+
+CREATE OR REPLACE TRANSIENT TABLE my_transient_table(col1 int, col2 string)
+DATA_RETENTION_TIME_IN_DAYS = 1; // value can be 0 or 1
+
+SELECT * FROM my_transient_table;
+
+// Constraints are not enforced excetp NOT NULL
+CREATE OR REPLACE TABLE MY_CONSTRAINT_TABLE
+(col1 int PRIMARY KEY, col2 int NOT NULL);
+
+INSERT INTO MY_CONSTRAINT_TABLE
+VALUES
+(1, 100), (1, 200);
+
+SELECT * FROM MY_CONSTRAINT_TABLE;
+
+INSERT INTO MY_CONSTRAINT_TABLE
+VALUES
+(1, 100), (1, null);
+
+SELECT * FROM MY_CONSTRAINT_TABLE;
+
+
+// Context Function
+SELECT CURRENT_REGION(),
+CURRENT_USER(),
+CURRENT_ROLE(),
+CURRENT_DATABASE(),
+CURRENT_SCHEMA(),
+CURRENT_WAREHOUSE(),
+CURRENT_TIMESTAMP(),
+CURRENT_DATE();
+
+
+//Data Types
+CREATE OR REPLACE TABLE "DWH"."MyDataTypeTable"
+(col_num_1 INT, col_num_2 INTEGER, col_num_3 BIGINT, col_num_4 NUMBER, col_num_5 NUMERIC(10, 2), col_num_6 DECIMAL(20, 3),
+col_str_1 CHAR, col_str_2 CHAR(4), col_str_3 VARCHAR, col_str_4 STRING, col_str_5 VARCHAR(5), col_str_6 TEXT,
+col_bool BOOLEAN,
+col_dt_1 DATE, col_dt_2 DATETIME, col_dt_3 TIME, col_dt_4 TIMESTAMP
+);
