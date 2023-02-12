@@ -251,3 +251,177 @@ col_str_1 CHAR, col_str_2 CHAR(4), col_str_3 VARCHAR, col_str_4 STRING, col_str_
 col_bool BOOLEAN,
 col_dt_1 DATE, col_dt_2 DATETIME, col_dt_3 TIME, col_dt_4 TIMESTAMP
 );
+
+DROP TABLE dwh.student;
+SELECT * FROM dwh.student;
+
+
+CREATE OR REPLACE TABLE dwh.student
+   (
+     src variant
+   )
+AS
+SELECT parse_json(int1) AS src
+FROM values
+(54, 3, 1);
+
+SELECT * FROM dwh.student;
+DESCRIBE TABLE dwh.student;
+
+CREATE OR REPLACE TABLE dwh.student
+   (
+     src variant
+   )
+AS
+SELECT parse_json(column1) AS src
+FROM values
+('
+ {
+    "school": "CottonWood Elementary",
+    "teacher" : {"name":"Tai Kim", "level": "max"},
+    "rating": 9,
+    "student": [
+        {
+        "id": "01",
+        "name": "Alpha",
+        "lastname": "Kim"
+         },
+        {
+        "id": "02",
+        "name": "Beta",
+        "lastname": "Kim"
+        }
+     ]
+ }');
+
+SELECT * FROM dwh.student;
+SELECT src:school, src:teacher.name FROM dwh.student;
+SELECT src['school'], src['teacher']['name'] FROM student;
+SELECT src:student[0].id, src:student[0].name, src:student[0].lastname FROM dwh.student;
+
+
+CREATE OR REPLACE TABLE rating(rating) AS
+SELECT src:rating::float FROM dwh.student;
+
+SELECT* FROM rating;
+DESCRIBE TABLE rating;
+
+
+SELECT get_ddl('table', 'rating');
+
+SELECT to_variant("string");
+
+DESCRIBE TABLE rating;
+
+SELECT * FROM dwh.student;
+
+INSERT INTO dwh.student SELECT to_variant(5);
+SELECT * FROM dwh.student;
+DESCRIBE TABLE dwh.student;
+
+// LOAD JSON DATA
+CREATE OR REPLACE TABLE dwh.MyVariantTable
+(
+   col_1 INT AUTOINCREMENT,
+   col_2 VARIANT
+);
+
+INSERT INTO dwh.MyVariantTable(col_2)
+    SELECT parse_json(column1) AS v
+    FROM VALUES ('null'), (null), ('true'), ('-17'), ('123.12'), ('1.912e2'), ('"String double quoted"  '), ('[-99, 10, 100, 87, false,]'), ('{"x": "abc", "y": false, "z": 10}') AS vals;
+
+SELECT * FROM dwh.MyVariantTable;
+
+SELECT parse_json(column1)
+FROM VALUES ('null'), (null), ('true'), ('-17'), ('123.12'), ('1.912e2'), ('"String double quoted"  '), ('[-99, 10, 100, 87, false,]'), ('{"x": "abc", "y": false, "z": 10}') AS vals;
+
+
+SELECT col_1, col_2, typeof(col_2)
+FROM dwh.MyVariantTable
+ORDER BY 1;
+
+create or replace table vartab (n number(2), v variant);
+insert into vartab
+    select column1 , parse_json(column2)
+    from values (1, 'null'),
+                (2, null),
+                (3, 'true'),
+                (4, '-17'),
+                (5, '123.12'),
+                (6, '1.912e2'),
+                (7, '"Om ara pa ca na dhih"  '),
+                (8, '[-1, 12, 289, 2188, false,]'),
+                (9, '{ "x" : "abc", "y" : false, "z": 10} ')
+       as vals;
+
+SELECT * FROM vartab;
+
+
+
+CREATE OR REPLACE TABLE autoincrement_table(
+    col1 INT AUTOINCREMENT,
+    col2 STRING
+);
+
+INSERT INTO autoincrement_table(col1, col2) VALUES (10, 'value');
+SELECT * FROM autoincrement_table;
+
+// IDENTITY
+CREATE OR REPLACE TABLE identityTable(
+    col1 INT IDENTITY,
+    col2 STRING
+);
+
+INSERT INTO identityTable(col2) VALUES ('value');
+SELECT * FROM identityTable;
+
+
+// SEQUENCE
+CREATE OR REPLACE SEQUENCE seq1
+START WITH = 1
+INCREMENT BY = 2;
+
+CREATE OR REPLACE TABLE seq1Tab
+(
+  customer_id INTEGER,
+  customer_name STRING
+);
+
+INSERT INTO seq1Tab
+VALUES (seq1.nextval, 'val1');
+
+SELECT * FROM seq1Tab;
+
+
+CREATE OR REPLACE TABLE seq2Tab
+(
+  customer_id INTEGER DEFAULT seq1.NEXTVAL,
+  customer_name STRING
+);
+
+
+INSERT INTO seq2Tab
+VALUES (seq1.nextval, 'val1');
+
+INSERT INTO seq2Tab(customer_name)
+VALUES ('values');
+
+
+SELECT * FROM seq2Tab;
+
+
+CREATE OR REPLACE TABLE source_table (v varchar) AS SELECT 'test' FROM table(generator(rowcount => 10000));
+SELECT * FROM source_table;
+
+CREATE OR REPLACE TABLE target_table(id number identity, v varchar);
+SELECT * FROM source_table;
+SELECT * FROM target_table;
+
+INSERT INTO target_table (v) SELECT v FROM source_table;
+INSERT INTO target_table (v) VALUES ('new one');
+SELECT * FROM target_table ORDER BY id DESC LIMIT 10;
+
+INSERT INTO target_table (v) SELECT v FROM source_table;
+INSERT INTO target_table (v) VALUES ('new one');
+
+SELECT * FROM target_table ORDER BY id DESC LIMIT 10;
