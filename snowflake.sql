@@ -425,3 +425,153 @@ INSERT INTO target_table (v) SELECT v FROM source_table;
 INSERT INTO target_table (v) VALUES ('new one');
 
 SELECT * FROM target_table ORDER BY id DESC LIMIT 10;
+
+
+// USER Stage
+SELECT current_user;
+LIST @~;
+
+//PUT file:///Users/noelson/Documents/snowflake/userStage.txt @~;
+//PUT file:///Users/noelson/Documents/snowflake/userStage.txt @~/userstage/
+//
+LIST @~;
+REMOVE @~/userstage;
+LIST @~;
+
+
+// TABLE STAGE
+CREATE TABLE tablestage(col INT, col2 STRING);
+SELECT * FROM tablestage;
+DESCRIBE TABLE tablestage;
+list @%tablestage;
+//PUT file:///Users/noelson/Documents/snowflake/package.json @%tablestage;
+//PUT file:///Users/noelson/Documents/snowflake/package.json @%tablestage/json;
+
+REMOVE @%tablestage/userStage.txt.gz;
+list @%tablestage;
+
+
+
+
+CREATE OR REPLACE TABLE parquettablestage
+(col1 VARIANT)
+STAGE_FILE_FORMAT = (TYPE=PARQUET);
+
+-- PUT file:///Users/noelson/Documents/snowflake/test.parquet @%parquettablestage;
+REMOVE @%parquettablestage/test.parquet.gz;
+
+LIST @%parquettablestage;
+
+
+SELECT metadata$filename, metadata$file_row_number, $1:T, $1:Status FROM @%parquettablestage;
+
+SELECT metadata$filename, metadata$file_row_number,
+$1:col1::String,
+$1:col2::String
+FROM @%parquettablestage;
+
+SELECT metadata$filename, metadata$file_row_number,
+$1:fit::String, $1:se_fit::String
+FROM @%parquettablestage/test2;
+
+
+list @%parquettablestage;
+
+
+copy into parquettablestage from @%parquettablestage/test.parquet;
+
+SELECT * FROM parquettablestage;
+
+SELECT COL1:Status FROM parquettablestage;
+
+SELECT * FROM "SNOWFLAKE"."ACCOUNT_USAGE"."STAGES";
+
+SELECT * FROM stages;
+
+
+// NAMED STAGE
+CREATE OR REPLACE STAGE namedstage comment = "my first internal stage";
+-- PUT file:///Users/noelson/Documents/snowflake/userStage.txt @NAMEDSTAGE/data;
+-- PUT file:///Users/noelson/Documents/snowflake/test.csv @NAMEDSTAGE/data auto_compress=false;
+-- PUT file:///Users/noelson/Documents/snowflake/test2.csv @NAMEDSTAGE/data auto_compress=false;
+-- PUT file:///Users/noelson/Documents/snowflake/test3.csv @NAMEDSTAGE/data auto_compress=false;
+
+
+
+LIST @NAMEDSTAGE;
+
+CREATE OR REPLACE TABLE copystage(col1 string, col2 string, col3 string);
+
+DROP TABLE copystage;
+SELECT * FROM copystage;
+
+COPY INTO copystage from @namedstage/data/test.csv;
+
+
+COPY INTO copystage FROM @namedstage/data/ files=('test.csv', 'test3.csv') FORCE = false;
+SELECT * FROM copystage;
+COPY INTO copystage FROM @namedstage/data/ pattern='.*.csv';
+COPY INTO copystage FROM @namedstage/data/ pattern='.*.csv' validation_mode = "RETURN_ERRORS";
+SELECT * FROM copystage;
+
+DELETE FROM copystage;
+COPY INTO copystage FROM @namedstage/data/ pattern='.*.csv'
+file_format = (type=csv trim_space = true field_optionally_enclosed_by = '0x22');
+
+
+SELECT * FROM copystage;
+
+
+//
+CREATE STAGE namedstagepqt
+file_format = PARQUET_FORMAT;
+
+-- PUT file:///Users/noelson/Documents/snowflake/test.parquet @NAMEDSTAGEPQT;
+
+SELECT $1:Group, $1:T, $1:Status FROM @namedstagepqt;
+
+
+CREATE OR REPLACE TABLE copystage2(col1 string, col2 string, col3 string);
+SELECT * FROM copystage2;
+INSERT INTO copystage2
+SELECT $1:Group, $1:T, $1:Status FROM @namedstagepqt;
+SELECT * FROM copystage2;
+
+
+DROP stage if exists namedstagepqt;
+
+
+
+CREATE STAGE namedstagecsv
+file_format = CSV_FORMAT_SKIP_HEADER;
+
+
+-- PUT file:///Users/noelson/Documents/snowflake/test.csv @namedstagecsv;
+LIST @namedstagecsv;
+
+SELECT $1, $2, $3 FROM @namedstagecsv/test.csv.gz;
+
+
+-- LOAD JSON into named stage
+CREATE stage namedstagejson
+file_format = JSON_FORMAT;
+
+-- PUT file:///Users/noelson/Documents/snowflake/package.json @namedstagejson;
+CREATE OR REPLACE TABLE copystage3(col1 string, col2 string);
+
+LIST @namedstagejson;
+SELECT * FROM copystage3;
+SELECT $1 FROM @namedstagejson/package.json.gz;
+
+CREATE TABLE json_table(col VARIANT)
+STAGE_FILE_FORMAT = JSON_FORMAT;
+
+COPY INTO json_table FROM @namedstagejson;
+SELECT * FROM json_table;
+SELECT COL:author FROM json_table;
+SELECT COL:dependencies FROM json_table;
+SELECT COL:dependencies:express FROM json_table;
+
+
+
+SHOW stages;
